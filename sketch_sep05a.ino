@@ -3,6 +3,8 @@
 #include <MFRC522.h>
 #include <Ethernet.h>
 
+
+
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 // the dns server ip
@@ -30,8 +32,15 @@ MFRC522::MIFARE_Key key;
 
 // Init array that will store new NUID
 byte nuidPICC[4];
+const int led1 = 3;
+const int led2 = 4;
+const int led3 = 5;
 
 void setup() {
+  pinMode(led1, OUTPUT);
+  pinMode(led2, OUTPUT);
+  pinMode(led3, OUTPUT);
+
   Serial.begin(9600);
   SPI.begin(); // Init SPI bus
   rfid.PCD_Init(); // Init MFRC522
@@ -71,7 +80,7 @@ void loop() {
   Serial.print(F("In hex: "));
   String uid = printHex(rfid.uid.uidByte, rfid.uid.size);
   Serial.println();
-
+  autenticarServidor(uid);
 
 
 
@@ -80,6 +89,59 @@ void loop() {
 
   // Stop encryption on PCD
   rfid.PCD_StopCrypto1();
+}
+
+void autenticarServidor(String uid) {
+  if (client.connect(server, 8080)) {
+    Serial.println("connected");
+    client.println("GET /AutenticaCliente/autenticacao.php?uid=" + uid + " HTTP/1.0");
+    client.println();
+  } else {
+    Serial.println("connection failed");
+  }
+
+  if (client) {
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        Serial.print(c);
+        readString += c;
+      }
+    }
+  }
+  client.stop();
+
+  int pos = readString.indexOf(headerSeparator) + headerSeparator.length();
+
+  Serial.println(readString.substring(pos));
+
+  if (readString.substring(pos) == "0") {
+    Serial.println("bloqueado");
+    digitalWrite(led1, LOW);
+    digitalWrite(led2, LOW);
+    digitalWrite(led3, LOW);
+  }
+
+  if (readString.substring(pos) == "1") {
+    digitalWrite(led1, HIGH);
+    digitalWrite(led2, LOW);
+    digitalWrite(led3, LOW);
+  }
+
+  if (readString.substring(pos) == "2") {
+    digitalWrite(led1, HIGH);
+    digitalWrite(led2, HIGH);
+    digitalWrite(led3, LOW);
+  }
+
+  if (readString.substring(pos) == "3") {
+    digitalWrite(led1, HIGH);
+    digitalWrite(led2, HIGH);
+    digitalWrite(led3, HIGH);
+  }
+
+
+
 }
 
 
@@ -91,8 +153,10 @@ String printHex(byte *buffer, byte bufferSize) {
   for (byte i = 0; i < bufferSize; i++) {
     Serial.print(buffer[i] < 0x10 ? " 0" : " ");
     Serial.print(buffer[i], HEX);
-    key += buffer[i] < 0x10 ? " 0" : " ";
+    key += buffer[i], HEX;
   }
+  Serial.println("------------");
+  Serial.println(key);
   return key;
 }
 
@@ -104,7 +168,7 @@ String printDec(byte *buffer, byte bufferSize) {
   for (byte i = 0; i < bufferSize; i++) {
     Serial.print(buffer[i] < 0x10 ? " 0" : " ");
     Serial.print(buffer[i], DEC);
-    key += buffer[i] < 0x10 ? " 0" : " "
+    key += buffer[i], HEX;
   }
   return key;
 }
