@@ -20,7 +20,6 @@ IPAddress ip(192, 168, 0, 2);
 EthernetClient client;
 byte server[] = { 192, 168, 0, 101 };
 
-String readString;
 String headerSeparator = "\r\n\r\n";
 
 #define SS_PIN 6
@@ -80,6 +79,7 @@ void loop() {
   Serial.print(F("In hex: "));
   String uid = printHex(rfid.uid.uidByte, rfid.uid.size);
   Serial.println();
+  delay(1000);
   autenticarServidor(uid);
 
 
@@ -112,34 +112,35 @@ void autenticarServidor(String uid) {
   client.stop();
 
   int pos = readString.indexOf(headerSeparator) + headerSeparator.length();
-
   Serial.println(readString.substring(pos));
 
-  if (readString.substring(pos) == "0") {
+  if (readString.indexOf("zero") > 0) {
     Serial.println("bloqueado");
     digitalWrite(led1, LOW);
     digitalWrite(led2, LOW);
     digitalWrite(led3, LOW);
   }
 
-  if (readString.substring(pos) == "1") {
+  else if (readString.indexOf("um") > 0) {
+    Serial.println("um__");
     digitalWrite(led1, HIGH);
     digitalWrite(led2, LOW);
     digitalWrite(led3, LOW);
   }
 
-  if (readString.substring(pos) == "2") {
+  else if (readString.indexOf("dois") > 0) {
+    Serial.println("dois__");
     digitalWrite(led1, HIGH);
     digitalWrite(led2, HIGH);
     digitalWrite(led3, LOW);
   }
 
-  if (readString.substring(pos) == "3") {
+  else if (readString.indexOf("tres") > 0) {
+    Serial.println("tres__");
     digitalWrite(led1, HIGH);
     digitalWrite(led2, HIGH);
     digitalWrite(led3, HIGH);
   }
-
 
 
 }
@@ -148,6 +149,7 @@ void autenticarServidor(String uid) {
 /**
    Helper routine to dump a byte array as hex values to Serial.
 */
+
 String printHex(byte *buffer, byte bufferSize) {
   String key;
   for (byte i = 0; i < bufferSize; i++) {
